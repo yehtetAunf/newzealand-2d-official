@@ -21,7 +21,7 @@ export default {
   },
   body: JSON.stringify({
     chat_id: chatId,
-    photo: "https://your-domain.com/result.jpg",
+    photo: "https://newzealand2d.com/result.jpg",
     caption: reply,
     parse_mode: "HTML"
   })
