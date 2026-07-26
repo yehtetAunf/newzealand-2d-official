@@ -1,1 +1,31 @@
-export default {};
+import { fetchResult } from "./src/api.js";
+import { sendMessage } from "./src/telegram.js";
+import { saveResult, getResult } from "./src/database.js";
+import { getMyanmarTime, formatResult } from "./src/utils.js";
+
+export default {
+  async fetch(request, env) {
+    try {
+      const data = await fetchResult(env.API_URL);
+
+      const result = data.result || data.number || data.value;
+      const date = data.date || "";
+      const time = getMyanmarTime();
+
+      const key = `result-${date}`;
+
+      const oldResult = await getResult(env, key);
+
+      if (oldResult !== result) {
+        const message = formatResult(date, time, result);
+
+        await sendMessage(
+          env.BOT_TOKEN,
+          env.CHAT_ID,
+          message
+        );
+
+        await saveResult(env, key, result);
+      }
+
+      return new Response("OK");
