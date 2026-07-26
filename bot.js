@@ -1,15 +1,38 @@
 import { config } from "./config.js";
 
 export async function handleMessage(text) {
-  if (text === "/start") {
+  const msg = text.trim().toLowerCase();
+
+  if (msg === "/start") {
     return `🤖 ${config.BOT_NAME}
 
-မင်္ဂလာပါ။
-New Zealand 2D Official Bot မှ ကြိုဆိုပါတယ် 🇳🇿`;
+မင်္ဂလာပါ 👋
+New Zealand 2D Official Bot မှ ကြိုဆိုပါတယ် 🇳🇿
+
+📌 အသုံးပြုနိုင်သော Commands
+
+/start - Bot စတင်ရန်
+/help - အကူအညီ
+/about - Bot အကြောင်း`;
   }
 
-  if (text.toLowerCase() === "hello") {
-    return "👋 Hello! Welcome.";
+  if (msg === "/help") {
+    return `📖 Help
+
+/start - Bot စတင်ရန်
+/about - Bot အကြောင်း
+
+စာပို့ပြီးလည်း အသုံးပြုနိုင်ပါတယ်။`;
+  }
+
+  if (msg === "/about") {
+    return `${config.BOT_NAME}
+📺 Channel : ${config.CHANNEL}
+🚀 Version : ${config.VERSION}`;
+  }
+
+  if (msg === "hello" || msg === "hi") {
+    return "👋 Hello! Welcome to New Zealand 2D Official Bot.";
   }
 
   return "📩 သင့်စာကို လက်ခံရရှိပါတယ်။";
