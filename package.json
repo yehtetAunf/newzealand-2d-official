@@ -1,11 +1,14 @@
 {
-  "name": "newzealand-2d-official",
+  "name": "newzealand-2d-live-bot",
   "version": "2.0.0",
-  "description": "New Zealand 2D Official Bot",
+  "private": true,
   "type": "module",
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev"
+    "check": "node --check index.js",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:code": "npx wrangler deploy --config wrangler.jsonc",
+    "db:apply": "npx wrangler d1 execute newzealand-2d-live-bot-db --remote --file=schema.sql",
+    "test": "node tests/smoke.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
