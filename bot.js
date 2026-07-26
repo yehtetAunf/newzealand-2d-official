@@ -30,7 +30,15 @@ New Zealand 2D Official Bot မှ ကြိုဆိုပါတယ် 🇳🇿
 📺 Channel : ${config.CHANNEL}
 🚀 Version : ${config.VERSION}`;
   }
+if (msg === "/2d") {
+  return `🎯 New Zealand 2D
 
+📊 Live Result
+⏰ Morning : -
+⏰ Evening : -
+
+🚧 Live API မချိတ်ရသေးပါ။`;
+}
   if (msg === "hello" || msg === "hi") {
     return "👋 Hello! Welcome to New Zealand 2D Official Bot.";
   }
