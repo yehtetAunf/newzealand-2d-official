@@ -1,11 +1,14 @@
 {
-  "name": "newzealand-2d-official",
+  "name": "newzealand-2d-bot",
   "version": "1.0.0",
-  "private": true,
+  "description": "New Zealand 2D Official Bot",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "deploy": "wrangler deploy"
+    "start": "node index.js"
   },
-  "devDependencies": {
-    "wrangler": "^4.0.0"
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "axios": "^1.8.0"
   }
 }
