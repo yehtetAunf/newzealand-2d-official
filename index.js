@@ -14,7 +14,7 @@ export default {
 
       const reply = await handleMessage(text);
 
-      await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+      await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
