@@ -14,16 +14,18 @@ export default {
 
       const reply = await handleMessage(text);
 
-      await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: reply
-        })
-      });
+      await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    chat_id: chatId,
+    photo: "https://your-domain.com/result.jpg",
+    caption: reply,
+    parse_mode: "HTML"
+  })
+});
     }
 
     return new Response("OK");
