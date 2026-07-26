@@ -29,3 +29,14 @@ export default {
       }
 
       return new Response("OK");
+            }
+
+      return new Response("No new result");
+    } catch (error) {
+      return new Response(
+        "Error: " + error.message,
+        { status: 500 }
+      );
+    }
+  }
+};
