@@ -35,6 +35,19 @@ New Zealand 2D Official Bot မှ ကြိုဆိုပါတယ် 🇳🇿
     return "👋 Hello! Welcome to New Zealand 2D Official Bot.";
   }
 
-  return "📩 သင့်စာကို လက်ခံရရှိပါတယ်။";
+  // ဂဏန်းပေါင်း (ဥပမာ 60+78)
+const match = msg.match(/^(\d+)\s*\+\s*(\d+)$/);
+
+if (match) {
+  const a = parseInt(match[1]);
+  const b = parseInt(match[2]);
+  const sum = a + b;
+
+  return `🧮 Result
+
+${a} + ${b} = ${sum}`;
+}
+
+return "📩 သင့်စာကို လက်ခံရရှိပါတယ်။";
 }
 
