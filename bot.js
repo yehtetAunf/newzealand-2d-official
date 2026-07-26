@@ -37,3 +37,4 @@ New Zealand 2D Official Bot မှ ကြိုဆိုပါတယ် 🇳🇿
 
   return "📩 သင့်စာကို လက်ခံရရှိပါတယ်။";
 }
+
