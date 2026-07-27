@@ -1,18 +1,20 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "newzealand-2d-live-bot",
+  "name": "newzealand-2d-official",
   "main": "index.js",
   "compatibility_date": "2026-07-25",
+
+  "triggers": {
+    "crons": [
+      "*/2 * * * *"
+    ]
+  },
 
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "newzealand-2d-official-db",
-      "database_id": "7d23a7d1-67d9-4afe-8800-b8b4ac6765e0"
+      "database_id": "7d23a7d1-67"
     }
-  ],
-
-  "triggers": {
-    "crons": ["*/2 * * * *"]
-  }
+  ]
 }
