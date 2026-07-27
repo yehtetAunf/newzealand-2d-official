@@ -1,7 +1,7 @@
-import { fetchResult } from "./src/api.js";
-import { sendMessage } from "./src/telegram.js";
-import { saveResult, getResult } from "./src/database.js";
-import { getMyanmarTime, formatResult } from "./src/utils.js";
+import { fetchResult } from "./api.js";
+import { sendMessage } from "./telegram.js";
+import { saveResult, getResult } from "./database.js";
+import { getMyanmarTime, formatResult } from "./utils.js";
 
 export default {
   async fetch(request, env) {
@@ -13,7 +13,6 @@ export default {
       const time = getMyanmarTime();
 
       const key = `result-${date}`;
-
       const oldResult = await getResult(env, key);
 
       if (oldResult !== result) {
@@ -26,12 +25,12 @@ export default {
         );
 
         await saveResult(env, key, result);
+
+        return new Response("OK");
       }
 
-      return new Response("OK");
-            }
-
       return new Response("No new result");
+
     } catch (error) {
       return new Response(
         "Error: " + error.message,
