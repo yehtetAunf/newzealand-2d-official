@@ -1,1 +1,1 @@
-export {};
+import { CONFIG } from "./config.js";
