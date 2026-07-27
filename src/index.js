@@ -6,6 +6,31 @@ import { getMyanmarTime, formatResult } from "./utils.js";
 export default {
   async fetch(request, env) {
     try {
+
+      // Telegram Webhook
+      if (request.method === "POST") {
+        const update = await request.json();
+
+        if (update.message?.text === "/live") {
+          const data = await fetchResult(env.API_URL);
+
+          const result = data.result || data.number || data.value;
+          const date = data.date || "";
+          const time = getMyanmarTime();
+
+          const message = formatResult(date, time, result);
+
+          await sendMessage(
+            env.TELEGRAM_BOT_TOKEN,
+            update.message.chat.id,
+            message
+          );
+
+          return new Response("OK");
+        }
+      }
+
+      // Auto result check
       const data = await fetchResult(env.API_URL);
 
       const result = data.result || data.number || data.value;
