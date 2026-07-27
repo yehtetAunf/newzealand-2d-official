@@ -19,7 +19,7 @@ export default {
         const message = formatResult(date, time, result);
 
         await sendMessage(
-          env.BOT_TOKEN,
+          env.TELEGRAM_BOT_TOKEN,
           env.CHAT_ID,
           message
         );
