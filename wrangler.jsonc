@@ -3,13 +3,13 @@
   "name": "newzealand-2d-live-bot",
   "main": "index.js",
   "compatibility_date": "2026-07-25",
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "newzealand-2d-live-bot-db",
-      "database_id": "RUN_NPM_RUN_DEPLOY_TO_FILL_AUTOMATICALLY"
-    }
-  ],
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "newzealand-2d-official-db",
+    "database_id": "7d23a7d1-67d9-4afe-8800-b8b4ac6765e0"
+  }
+]
   "triggers": {
     "crons": ["*/2 * * * *"]
   }
