@@ -14,7 +14,7 @@ export default {
         if (update.message?.text === "/live") {
           const data = await fetchResult(env.API_URL);
 
-          const result = data.result || data.number || data.value;
+          const result = data.live?.result || "--";
           const date = data.date || "";
           const time = getMyanmarTime();
 
@@ -33,7 +33,7 @@ export default {
       // Auto result check
       const data = await fetchResult(env.API_URL);
 
-      const result = data.result || data.number || data.value;
+      const result = data.live?.result || "--";
       const date = data.date || "";
       const time = getMyanmarTime();
 
