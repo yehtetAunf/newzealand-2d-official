@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "newzealand-2d-live-bot",
+  "name": "newzealand-2d-official",
   "main": "index.js",
   "compatibility_date": "2026-07-25",
 
