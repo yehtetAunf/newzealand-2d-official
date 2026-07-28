@@ -8,46 +8,113 @@ export default {
     try {
 
       // Telegram Webhook
-if (request.method === "POST") {
-  const update = await request.json();
+      if (request.method === "POST") {
+        const update = await request.json();
 
-  // Channel Register
-  if (update.message?.text === "/register") {
-    const chatId = update.message.chat.id;
-    const title = update.message.chat.title || "";
 
-    await addChannel(
-      env,
-      chatId,
-      title
-    );
+        // Channel Register
+        if (update.message?.text === "/register") {
+          const chatId = update.message.chat.id;
+          const title = update.message.chat.title || "";
 
-    await sendMessage(
-      env.TELEGRAM_BOT_TOKEN,
-      chatId,
-      "✅ Channel registered successfully"
-    );
+          await addChannel(
+            env,
+            chatId,
+            title
+          );
 
-    return new Response("OK");
+          await sendMessage(
+            env.TELEGRAM_BOT_TOKEN,
+            chatId,
+            "✅ Channel registered successfully"
+          );
+
+          return new Response("OK");
+        }
+
+
+        // Live Command
+        if (update.message?.text === "/live") {
+          const data = await fetchResult(env.API_URL);
+
+          const result = data.live?.result || "--";
+          const date = data.date || "";
+          const time = getMyanmarTime();
+
+          const message = formatResult(
+            date,
+            time,
+            result
+          );
+
+          await sendMessage(
+            env.TELEGRAM_BOT_TOKEN,
+            update.message.chat.id,
+            message
+          );
+
+          return new Response("OK");
+        }
+      }
+
+
+      // Auto Result Check
+      const data = await fetchResult(env.API_URL);
+
+      const result = data.live?.result || "--";
+      const date = data.date || "";
+      const time = getMyanmarTime();
+
+      const key = `result-${date}`;
+
+      const oldResult = await getResult(
+        env,
+        key
+      );
+
+
+      if (oldResult !== result) {
+
+        const message = formatResult(
+          date,
+          time,
+          result
+        );
+
+
+        await sendMessage(
+          env.TELEGRAM_BOT_TOKEN,
+          env.CHAT_ID,
+          message
+        );
+
+
+        await saveResult(
+          env,
+          key,
+          result
+        );
+
+
+        // Future Poster Upload
+        // sendPhoto() will be added here
+
+        return new Response("OK");
+      }
+
+
+      return new Response("No new result");
+
+
+    } catch (error) {
+
+      return new Response(
+        "Error: " + error.message,
+        {
+          status: 500
+        }
+      );
+
+    }
   }
-
-
-  // Live Result
-  if (update.message?.text === "/live") {
-    const data = await fetchResult(env.API_URL);
-
-    const result = data.live?.result || "--";
-    const date = data.date || "";
-    const time = getMyanmarTime();
-
-    const message = formatResult(date, time, result);
-
-    await sendMessage(
-      env.TELEGRAM_BOT_TOKEN,
-      update.message.chat.id,
-      message
-    );
-
-    return new Response("OK");
-  }
-}
+};
