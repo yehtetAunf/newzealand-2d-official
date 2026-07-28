@@ -53,3 +53,14 @@ CREATE TABLE IF NOT EXISTS broadcast_drafts (
 
 CREATE INDEX IF NOT EXISTS idx_broadcast_status
 ON broadcast_drafts (status, created_at);
+CREATE TABLE IF NOT EXISTS channels (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel_id TEXT NOT NULL UNIQUE,
+  channel_name TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_channels_active
+ON channels (is_active);
