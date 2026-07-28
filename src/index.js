@@ -8,59 +8,46 @@ export default {
     try {
 
       // Telegram Webhook
-      if (request.method === "POST") {
-        const update = await request.json();
+if (request.method === "POST") {
+  const update = await request.json();
 
-        if (update.message?.text === "/live") {
-          const data = await fetchResult(env.API_URL);
+  // Channel Register
+  if (update.message?.text === "/register") {
+    const chatId = update.message.chat.id;
+    const title = update.message.chat.title || "";
 
-          const result = data.live?.result || "--";
-          const date = data.date || "";
-          const time = getMyanmarTime();
+    await addChannel(
+      env,
+      chatId,
+      title
+    );
 
-          const message = formatResult(date, time, result);
+    await sendMessage(
+      env.TELEGRAM_BOT_TOKEN,
+      chatId,
+      "✅ Channel registered successfully"
+    );
 
-          await sendMessage(
-            env.TELEGRAM_BOT_TOKEN,
-            update.message.chat.id,
-            message
-          );
-
-          return new Response("OK");
-        }
-      }
-
-      // Auto result check
-      const data = await fetchResult(env.API_URL);
-
-      const result = data.live?.result || "--";
-      const date = data.date || "";
-      const time = getMyanmarTime();
-
-      const key = `result-${date}`;
-      const oldResult = await getResult(env, key);
-
-      if (oldResult !== result) {
-        const message = formatResult(date, time, result);
-
-        await sendMessage(
-          env.TELEGRAM_BOT_TOKEN,
-          env.CHAT_ID,
-          message
-        );
-
-        await saveResult(env, key, result);
-
-        return new Response("OK");
-      }
-
-      return new Response("No new result");
-
-    } catch (error) {
-      return new Response(
-        "Error: " + error.message,
-        { status: 500 }
-      );
-    }
+    return new Response("OK");
   }
-};
+
+
+  // Live Result
+  if (update.message?.text === "/live") {
+    const data = await fetchResult(env.API_URL);
+
+    const result = data.live?.result || "--";
+    const date = data.date || "";
+    const time = getMyanmarTime();
+
+    const message = formatResult(date, time, result);
+
+    await sendMessage(
+      env.TELEGRAM_BOT_TOKEN,
+      update.message.chat.id,
+      message
+    );
+
+    return new Response("OK");
+  }
+}
