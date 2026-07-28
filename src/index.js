@@ -1,5 +1,5 @@
 import { fetchResult } from "./api.js";
-import { sendMessage } from "./telegram.js";
+import { sendMessage, sendPhoto } from "./telegram.js";
 import { saveResult, getResult } from "./database.js";
 import { getMyanmarTime, formatResult } from "./utils.js";
 
