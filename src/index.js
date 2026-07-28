@@ -15,8 +15,10 @@ export default {
 
         // Channel Register
         if (update.message?.text === "/register") {
+
           const chatId = update.message.chat.id;
           const title = update.message.chat.title || "";
+
 
           await addChannel(
             env,
@@ -24,11 +26,13 @@ export default {
             title
           );
 
+
           await sendMessage(
             env.TELEGRAM_BOT_TOKEN,
             chatId,
             "✅ Channel registered successfully"
           );
+
 
           return new Response("OK");
         }
@@ -36,11 +40,13 @@ export default {
 
         // Live Command
         if (update.message?.text === "/live") {
+
           const data = await fetchResult(env.API_URL);
 
           const result = data.live?.result || "--";
           const date = data.date || "";
           const time = getMyanmarTime();
+
 
           const message = formatResult(
             date,
@@ -48,11 +54,13 @@ export default {
             result
           );
 
+
           await sendMessage(
             env.TELEGRAM_BOT_TOKEN,
             update.message.chat.id,
             message
           );
+
 
           return new Response("OK");
         }
@@ -60,13 +68,16 @@ export default {
 
 
       // Auto Result Check
+
       const data = await fetchResult(env.API_URL);
 
       const result = data.live?.result || "--";
       const date = data.date || "";
       const time = getMyanmarTime();
 
+
       const key = `result-${date}`;
+
 
       const oldResult = await getResult(
         env,
@@ -76,19 +87,6 @@ export default {
 
       if (oldResult !== result) {
 
-        const message = formatResult(
-          date,
-          time,
-          result
-        );
-
-
-        await sendMessage(
-          env.TELEGRAM_BOT_TOKEN,
-          env.CHAT_ID,
-          message
-        );
-
 
         await saveResult(
           env,
@@ -97,8 +95,32 @@ export default {
         );
 
 
-        // Future Poster Upload
-        // sendPhoto() will be added here
+        // Create Poster
+
+        const poster = await createPoster(
+          env.POSTER_BACKGROUND_URL,
+          date,
+          time,
+          result
+        );
+
+
+        // Get Registered Channels
+
+        const channels = await getChannels(env);
+
+
+        for (const channel of channels) {
+
+          await sendPhoto(
+            env.TELEGRAM_BOT_TOKEN,
+            channel.channel_id,
+            poster.photo,
+            poster.caption
+          );
+
+        }
+
 
         return new Response("OK");
       }
