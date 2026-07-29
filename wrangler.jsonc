@@ -4,8 +4,17 @@
   "main": "src/index.js",
   "compatibility_date": "2026-07-25",
 
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
+
   "vars": {
-    "API_URL": "https://newzealand2d.com/api",
+    "API_URL": "https://nz-six-times-2d-2026.yehtetaung7655.workers.dev/api/state",
     "POSTER_BACKGROUND_URL": "https://raw.githubusercontent.com/yehtetAunf/newzealand-2d-official/main/images/result.jpg.jpg"
   },
 
