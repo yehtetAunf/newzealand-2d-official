@@ -5,6 +5,7 @@
   "compatibility_date": "2026-07-25",
 
   "vars": {
+    "API_URL": "https://newzealand2d.com/api",
     "POSTER_BACKGROUND_URL": "https://raw.githubusercontent.com/yehtetAunf/newzealand-2d-official/main/images/result.jpg.jpg"
   },
 
