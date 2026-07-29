@@ -21,9 +21,7 @@ async function autoPost(env) {
   const date = data.date || "";
   const time = getMyanmarTime();
 
-
   const key = `result-${date}`;
-
 
   const oldResult = await getResult(
     env,
@@ -32,6 +30,7 @@ async function autoPost(env) {
 
 
   if (oldResult === result) {
+    console.log("No new result");
     return "No new result";
   }
 
@@ -73,89 +72,90 @@ async function autoPost(env) {
 
 export default {
 
-  // Telegram Webhook
   async fetch(request, env) {
 
     try {
 
-
-      if (request.method === "POST") {
-
-        const update = await request.json();
-
-
-        // Register Channel
-
-        if (update.message?.text === "/register") {
+      if (request.method !== "POST") {
+        return new Response("OK");
+      }
 
 
-          const chatId = update.message.chat.id;
-
-          const title =
-            update.message.chat.title || "";
+      const update = await request.json();
 
 
-          await addChannel(
-            env,
-            chatId,
-            title
+      console.log(
+        "TELEGRAM UPDATE:",
+        JSON.stringify(update)
+      );
+
+
+      // /register
+
+      if (update.message?.text === "/register") {
+
+        const chatId = update.message.chat.id;
+
+        const title =
+          update.message.chat.title || "";
+
+
+        await addChannel(
+          env,
+          chatId,
+          title
+        );
+
+
+        await sendMessage(
+          env.TELEGRAM_BOT_TOKEN,
+          chatId,
+          "✅ Channel registered successfully"
+        );
+
+
+        return new Response("OK");
+
+      }
+
+
+
+      // /live
+
+      if (update.message?.text === "/live") {
+
+        const data =
+          await fetchResult(env.API_URL);
+
+
+        const result =
+          data.live?.result || "--";
+
+
+        const date =
+          data.date || "";
+
+
+        const time =
+          getMyanmarTime();
+
+
+        const message =
+          formatResult(
+            date,
+            time,
+            result
           );
 
 
-          await sendMessage(
-            env.TELEGRAM_BOT_TOKEN,
-            chatId,
-            "✅ Channel registered successfully"
-          );
+        await sendMessage(
+          env.TELEGRAM_BOT_TOKEN,
+          update.message.chat.id,
+          message
+        );
 
 
-          return new Response("OK");
-
-        }
-
-
-
-        // Live Command
-
-        if (update.message?.text === "/live") {
-
-
-          const data =
-            await fetchResult(env.API_URL);
-
-
-          const result =
-            data.live?.result || "--";
-
-
-          const date =
-            data.date || "";
-
-
-          const time =
-            getMyanmarTime();
-
-
-
-          const message =
-            formatResult(
-              date,
-              time,
-              result
-            );
-
-
-
-          await sendMessage(
-            env.TELEGRAM_BOT_TOKEN,
-            update.message.chat.id,
-            message
-          );
-
-
-          return new Response("OK");
-
-        }
+        return new Response("OK");
 
       }
 
@@ -166,10 +166,16 @@ export default {
     } catch (error) {
 
 
+      console.log(
+        "WEBHOOK ERROR:",
+        error
+      );
+
+
       return new Response(
-        "Error: " + error.message,
+        "OK",
         {
-          status: 500
+          status: 200
         }
       );
 
@@ -178,20 +184,23 @@ export default {
   },
 
 
-
-  // Cloudflare Cron Trigger
-
   async scheduled(event, env, ctx) {
 
     try {
 
-      await autoPost(env);
+      const result = await autoPost(env);
+
+      console.log(
+        "CRON RESULT:",
+        result
+      );
+
 
     } catch (error) {
 
       console.log(
-        "Auto Post Error:",
-        error.message
+        "AUTO POST ERROR:",
+        error
       );
 
     }
