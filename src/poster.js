@@ -9,9 +9,7 @@ export async function createPoster(
   }
 
   return {
-    // မူလ JPG ပုံကိုပဲ Telegram ဆီပို့မယ်
     photo: backgroundUrl,
-
     caption: `📅 ${date}
 ⏰ ${time}
 
