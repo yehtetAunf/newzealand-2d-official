@@ -1631,8 +1631,7 @@ import {
 import { createPoster } from "./poster.js";
 
 async function autoPost(env) {
-  const data = await fetchResult(STATE_API_URL);
-
+  const data = await fetchLiveState();
   const rounds = data.rounds || [];
 
   // ထွက်ပြီးသား result တွေပဲ ရှာမယ်
