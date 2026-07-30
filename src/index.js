@@ -1626,38 +1626,51 @@ import {
   getMyanmarTime,
   formatResult
 } from "./utils.js";
+
 import { createPoster } from "./poster.js";
 
-
 async function autoPost(env) {
-
   const data = await fetchResult(STATE_API_URL);
 
-  const result = data.live?.result || "--";
-  const date = data.date || "";
-  const time = getMyanmarTime();
+  const rounds = data.rounds || [];
 
-  const key = `result-${date}`;
-
-  const oldResult = await getResult(
-    env,
-    key
+  // ထွက်ပြီးသား result တွေပဲ ရှာမယ်
+  const publishedRounds = rounds.filter(
+    (round) =>
+      round.status === "published" &&
+      round.result &&
+      round.result !== "--"
   );
 
+  // ထွက်ပြီးသား Result မရှိသေးရင် မတင်ဘူး
+  if (publishedRounds.length === 0) {
+    console.log("No published result");
+    return "No published result";
+  }
 
+  // နောက်ဆုံးထွက်ပြီးသား Result ကိုယူမယ်
+  const latestRound =
+    publishedRounds[publishedRounds.length - 1];
+
+  const result = latestRound.result;
+  const date = data.date || "";
+  const time = latestRound.time || "";
+
+  // Round နဲ့ Result နှစ်ခုလုံးပါမှတ်မယ်
+  const key = `result-${date}-round-${latestRound.round}`;
+
+  const oldResult = await getResult(env, key);
+
+  // အဲဒီ Round ကို တင်ပြီးသားဆိုရင် ထပ်မတင်ဘူး
   if (oldResult === result) {
-    console.log("No new result");
+    console.log("No new published result");
     return "No new result";
   }
 
-
-  await saveResult(
-    env,
-    key,
-    result
-  );
-
-
+  // တင်ပြီးသားအဖြစ် မှတ်မယ်
+  await saveResult(env, key, result);
+  // User App က result ကိုယူပြီး
+  // မူလ background ပုံနဲ့ Telegram ကိုပို့မယ်
   const poster = await createPoster(
     env.POSTER_BACKGROUND_URL,
     date,
@@ -1665,25 +1678,19 @@ async function autoPost(env) {
     result
   );
 
-
   const channels = await getChannels(env);
 
-
   for (const channel of channels) {
-
     await telegramSendPhoto(
-  env.BOT_TOKEN,
-  channel.channel_id,
-  poster.photo,
-  poster.caption
-);
+      env.BOT_TOKEN,
+      channel.channel_id,
+      poster.photo,
+      poster.caption
+    );
   }
-
 
   return "Posted";
 }
-
-
 
 const legacyWorkerHandlers = {
 
