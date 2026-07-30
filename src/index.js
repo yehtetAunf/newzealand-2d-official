@@ -1321,7 +1321,7 @@ async function setupWebhook(env, origin) {
   const webhook = await telegramRequest(env.BOT_TOKEN, "setWebhook", {
     url: `${origin}/webhook`,
     secret_token: env.WEBHOOK_SECRET,
-    allowed_updates: ["message", "callback_query"],
+    allowed_updates: ["message", "channel_post", "callback_query"],
     drop_pending_updates: false,
   });
 
