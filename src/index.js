@@ -1549,9 +1549,6 @@ async function autoPost(env) {
 
 
 
-export default {
-
-  async fetch(request, env) {
 
     try {
 
