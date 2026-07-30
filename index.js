@@ -1547,10 +1547,6 @@ async function autoPost(env) {
   return "Posted";
 }
 
-
-
-export default {
-
   async fetch(request, env) {
 
     try {
