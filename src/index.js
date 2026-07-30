@@ -1549,6 +1549,9 @@ async function autoPost(env) {
 
 
 
+export default {
+
+  async fetch(request, env) {
 
     try {
 
@@ -1655,9 +1658,10 @@ async function autoPost(env) {
         }
       );
 
-     );
+    }
 
-    },
+  },
+
 
   async scheduled(event, env, ctx) {
 
