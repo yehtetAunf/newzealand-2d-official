@@ -1,1 +1,0 @@
-# newzealand-2d-official
