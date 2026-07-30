@@ -1655,10 +1655,9 @@ async function autoPost(env) {
         }
       );
 
-    }
+     );
 
-  },
-
+    },
 
   async scheduled(event, env, ctx) {
 
