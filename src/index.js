@@ -83,6 +83,45 @@ async function telegramRequest(token, method, data = {}, options = {}) {
   throw new Error("Telegram request failed");
 }
 
+throw new Error("Telegram request failed");
+}
+
+
+// ဒီနေရာကနေ စထည့်ပါ
+async function telegramSendPhoto(token, chatId, photo, caption = "") {
+  const form = new FormData();
+
+  form.append("chat_id", String(chatId));
+
+  if (photo instanceof Blob) {
+    form.append("photo", photo, "poster.jpg");
+  } else {
+    form.append("photo", String(photo));
+  }
+
+  if (caption) {
+    form.append("caption", caption);
+  }
+
+  const response = await fetch(
+    `https://api.telegram.org/bot${token}/sendPhoto`,
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok || result.ok !== true) {
+    throw new Error(
+      result.description ||
+      `Telegram sendPhoto failed: ${response.status}`
+    );
+  }
+
+  return result;
+}
 async function fetchLiveState() {
   const response = await fetch(STATE_API_URL, {
     headers: { Accept: "application/json", "Cache-Control": "no-cache" },
