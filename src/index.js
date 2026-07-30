@@ -1306,14 +1306,19 @@ async function handleUpdate(env, update, origin) {
   }
 
   if (update.channel_post) {
-    const channel = update.channel_post.chat;
+  console.log(
+    "CHANNEL POST RECEIVED:",
+    JSON.stringify(update.channel_post)
+  );
 
-    if (channel?.id) {
-      await addChannel(
-        env,
-        String(channel.id),
-        channel.title || channel.username || ""
-      );
+  const channel = update.channel_post.chat;
+
+  if (channel?.id) {
+    await addChannel(
+      env,
+      String(channel.id),
+      channel.title || channel.username || ""
+    );
 
       console.log(
         "Channel registered:",
