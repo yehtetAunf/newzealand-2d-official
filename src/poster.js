@@ -8,19 +8,16 @@ export async function createPoster(
     throw new Error("POSTER_BACKGROUND_URL is missing");
   }
 
-  // Background URL ကို စစ်ဆေးပါ
-  try {
-    new URL(backgroundUrl);
-  } catch {
-    throw new Error("Invalid POSTER_BACKGROUND_URL");
-  }
+  const url = new URL(backgroundUrl);
+
+  // Cloudflare Image Transformations
+  // GitHub Raw image ကို Cloudflare zone ကနေ transform လုပ်မယ်
+  const transformedUrl =
+    `https://newzealand2d.com/cdn-cgi/image/width=1080,height=1080,fit=cover,format=png/${url.href}`;
 
   return {
-    // Telegram ကို SVG မပို့တော့ဘဲ
-    // မူလ JPG/PNG image URL ကိုပဲ ပို့မယ်
-    photo: backgroundUrl,
+    photo: transformedUrl,
 
-    // Date / Time / Result ကို Caption အနေနဲ့ ထည့်မယ်
     caption: `📅 ${date}
 ⏰ ${time}
 
