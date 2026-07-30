@@ -1479,18 +1479,32 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/webhook") {
-      const telegramSecret = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
-      if (telegramSecret !== env.WEBHOOK_SECRET) return new Response("Unauthorized", { status: 401 });
+  const telegramSecret = request.headers.get(
+    "X-Telegram-Bot-Api-Secret-Token"
+  );
 
-      try {
-        const update = await request.json();
-        ctx.waitUntil(
-          handleUpdate(env, update, url.origin).catch((error) => console.error("Webhook error", error))
-        );
-      } catch (error) {
-        console.error("Invalid webhook payload", error);
-      }
-      return new Response("OK");
+  if (telegramSecret !== env.WEBHOOK_SECRET) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  try {
+    const update = await request.json();
+
+    console.log(
+      "TELEGRAM UPDATE TYPE:",
+      Object.keys(update)
+    );
+
+    ctx.waitUntil(
+      handleUpdate(env, update, url.origin).catch((error) =>
+        console.error("Webhook error", error)
+      )
+    );
+  } catch (error) {
+    console.error("Invalid webhook payload", error);
+  }
+
+  return new Response("OK");
     }
 
     return new Response("New Zealand 2D Live Bot is running");
