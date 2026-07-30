@@ -8,84 +8,13 @@ export async function createPoster(
     throw new Error("POSTER_BACKGROUND_URL is missing");
   }
 
-  const safeDate = escapeXml(date);
-  const safeTime = escapeXml(time);
-  const safeResult = escapeXml(result);
-
-  const svg = `
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  xmlns:xlink="http://www.w3.org/1999/xlink"
-  width="1080"
-  height="1080"
-  viewBox="0 0 1080 1080"
->
-  <image
-    href="${backgroundUrl}"
-    x="0"
-    y="0"
-    width="1080"
-    height="1080"
-    preserveAspectRatio="xMidYMid slice"
-  />
-
-  <rect
-    x="40"
-    y="760"
-    width="1000"
-    height="280"
-    rx="30"
-    fill="#000000"
-    fill-opacity="0.65"
-  />
-
-  <text
-    x="80"
-    y="835"
-    fill="#ffffff"
-    font-size="42"
-    font-family="Arial, sans-serif"
-    font-weight="bold"
-  >📅 ${safeDate}</text>
-
-  <text
-    x="80"
-    y="900"
-    fill="#ffffff"
-    font-size="42"
-    font-family="Arial, sans-serif"
-    font-weight="bold"
-  >⏰ ${safeTime}</text>
-
-  <text
-    x="80"
-    y="980"
-    fill="#ffffff"
-    font-size="58"
-    font-family="Arial, sans-serif"
-    font-weight="bold"
-  >🎯 Result: ${safeResult}</text>
-</svg>
-`;
-
   return {
-    photo: new Blob(
-      [svg],
-      { type: "image/svg+xml" }
-    ),
+    // မူလ JPG ပုံကိုပဲ Telegram ဆီပို့မယ်
+    photo: backgroundUrl,
 
     caption: `📅 ${date}
 ⏰ ${time}
 
 🎯 Result: ${result}`,
   };
-}
-
-function escapeXml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
 }
