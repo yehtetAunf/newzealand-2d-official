@@ -618,6 +618,7 @@ async function syncStateToDatabase(env, data, shouldNotify) {
     for (const event of events) {
       const text = resultNotificationText(event.record, event.state === "changed");
       await broadcastToSubscribers(env, text, { reply_markup: notificationKeyboard() });
+      await broadcastToChannels(env, text, { reply_markup: notificationKeyboard() });
       await markResultNotified(env, event.record);
     }
   }
