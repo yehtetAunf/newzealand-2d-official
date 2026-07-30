@@ -1587,7 +1587,7 @@ import { createPoster } from "./poster.js";
 
 async function autoPost(env) {
 
-  const data = await fetchResult(env.API_URL);
+  const data = await fetchResult(STATE_API_URL);
 
   const result = data.live?.result || "--";
   const date = data.date || "";
