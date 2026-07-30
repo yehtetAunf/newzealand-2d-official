@@ -1621,11 +1621,11 @@ async function autoPost(env) {
   for (const channel of channels) {
 
     await sendPhoto(
-      env.TELEGRAM_BOT_TOKEN,
-      channel.channel_id,
-      poster.photo,
-      poster.caption
-    );
+  env.BOT_TOKEN,
+  channel.channel_id,
+  poster.photo,
+  poster.caption
+);
 
   }
 
