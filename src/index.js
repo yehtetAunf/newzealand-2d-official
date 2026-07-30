@@ -1673,10 +1673,10 @@ const legacyWorkerHandlers = {
 
 
         await sendMessage(
-          env.TELEGRAM_BOT_TOKEN,
-          chatId,
-          "✅ Channel registered successfully"
-        );
+  env.BOT_TOKEN,
+  chatId,
+  "✅ Channel registered successfully"
+);
 
 
         return new Response("OK");
