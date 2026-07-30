@@ -1498,11 +1498,19 @@ async function runScheduled(env) {
     }
 
         try {
-      const autoPostResult = await autoPost(env);
-      console.log("Auto post complete", autoPostResult);
-    } catch (error) {
-      console.error("Auto post failed", error);
-        }
+  const autoPostResult = await autoPost(env);
+  console.log("Auto post complete", autoPostResult);
+} catch (error) {
+  console.error(
+    "AUTO_POST_ERROR_MESSAGE:",
+    error?.message || String(error)
+  );
+
+  console.error(
+    "AUTO_POST_ERROR_STACK:",
+    error?.stack || "No stack"
+  );
+    }
     
     try {
       await processQueuedBroadcast(env);
