@@ -539,6 +539,40 @@ async function broadcastToSubscribers(env, text, extra = {}) {
   return stats;
 }
 
+async function broadcastToChannels(env, text, extra = {}) {
+  const result = await env.DB.prepare(`
+    SELECT channel_id, channel_name
+    FROM channels
+    WHERE is_active = 1
+  `).all();
+
+  const rows = result.results || [];
+
+  for (const row of rows) {
+    try {
+      await telegramRequest(env.BOT_TOKEN, "sendMessage", {
+        chat_id: row.channel_id,
+        text,
+        link_preview_options: { is_disabled: true },
+        ...extra,
+      });
+
+      console.log(
+        "Channel broadcast sent:",
+        row.channel_id,
+        row.channel_name
+      );
+    } catch (error) {
+      console.error(
+        "Channel broadcast failed:",
+        row.channel_id,
+        row.channel_name,
+        error
+      );
+    }
+  }
+  }
+
 function resultNotificationText(record, changed = false) {
   const lines = [
     changed ? "♻️ New Zealand 2D Result ပြင်ဆင်ချက်" : "🔔 New Zealand 2D Result",
