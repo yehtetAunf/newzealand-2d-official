@@ -1461,6 +1461,13 @@ async function runScheduled(env) {
       console.error("Scheduled state sync failed", error);
     }
 
+        try {
+      const autoPostResult = await autoPost(env);
+      console.log("Auto post complete", autoPostResult);
+    } catch (error) {
+      console.error("Auto post failed", error);
+        }
+    
     try {
       await processQueuedBroadcast(env);
     } catch (error) {
