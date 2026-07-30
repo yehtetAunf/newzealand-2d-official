@@ -1549,7 +1549,7 @@ async function autoPost(env) {
 
 
 
-export default {
+const legacyWorkerHandlers = {
 
   async fetch(request, env) {
 
