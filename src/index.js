@@ -1298,11 +1298,33 @@ async function handleMessage(env, message, origin) {
 
 async function handleUpdate(env, update, origin) {
   await ensureSchema(env);
+
   if (update.message) {
     await upsertSubscriber(env, update.message);
     await handleMessage(env, update.message, origin);
     return;
   }
+
+  if (update.channel_post) {
+    const channel = update.channel_post.chat;
+
+    if (channel?.id) {
+      await addChannel(
+        env,
+        String(channel.id),
+        channel.title || channel.username || ""
+      );
+
+      console.log(
+        "Channel registered:",
+        channel.id,
+        channel.title || channel.username || ""
+      );
+    }
+
+    return;
+  }
+
   if (update.callback_query) {
     await upsertSubscriber(env, update.callback_query);
     await handleCallback(env, update.callback_query, origin);
