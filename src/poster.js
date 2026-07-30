@@ -21,7 +21,7 @@ export async function createPoster(
   viewBox="0 0 1080 1080"
 >
   <image
-    href="${backgroundUrl}"
+    href="${escapeXml(backgroundUrl)}"
     x="0"
     y="0"
     width="1080"
@@ -35,41 +35,41 @@ export async function createPoster(
     width="980"
     height="260"
     rx="30"
-    fill="black"
+    fill="#000000"
     fill-opacity="0.65"
   />
 
   <text
     x="90"
     y="825"
-    fill="white"
+    fill="#ffffff"
     font-size="42"
     font-family="Arial, sans-serif"
     font-weight="bold"
   >
-    📅 ${safeDate}
+    ${safeDate}
   </text>
 
   <text
     x="90"
     y="890"
-    fill="white"
+    fill="#ffffff"
     font-size="42"
     font-family="Arial, sans-serif"
     font-weight="bold"
   >
-    ⏰ ${safeTime}
+    ${safeTime}
   </text>
 
   <text
     x="90"
     y="970"
-    fill="white"
+    fill="#ffffff"
     font-size="58"
     font-family="Arial, sans-serif"
     font-weight="bold"
   >
-    🎯 Result: ${safeResult}
+    Result: ${safeResult}
   </text>
 </svg>
 `;
@@ -96,4 +96,4 @@ function escapeXml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
-            }
+}
