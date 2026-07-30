@@ -1682,12 +1682,12 @@ async function autoPost(env) {
   const channels = await getChannels(env);
 
   for (const channel of channels) {
-    await telegramSendPhoto(
-      env.BOT_TOKEN,
-      channel.channel_id,
-      poster.photo,
-      poster.caption
-    );
+    await sendPhoto(
+  env.BOT_TOKEN,
+  channel.channel_id,
+  poster.photo,
+  poster.caption
+);
   }
 
   return "Posted";
