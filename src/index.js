@@ -79,13 +79,9 @@ async function telegramRequest(token, method, data = {}, options = {}) {
 
     throw error;
   }
-
-  throw new Error("Telegram request failed");
-}
-
+  
 throw new Error("Telegram request failed");
-}
-
+      }
 
 // ဒီနေရာကနေ စထည့်ပါ
 async function telegramSendPhoto(token, chatId, photo, caption = "") {
