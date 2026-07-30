@@ -4,30 +4,83 @@ export async function createPoster(
   time,
   result
 ) {
-  const response = await fetch(backgroundUrl);
-
-  if (!response.ok) {
-    throw new Error(
-      `Poster background fetch failed: ${response.status}`
-    );
+  if (!backgroundUrl) {
+    throw new Error("POSTER_BACKGROUND_URL is missing");
   }
 
-  const imageBuffer = await response.arrayBuffer();
+  const safeDate = escapeXml(date);
+  const safeTime = escapeXml(time);
+  const safeResult = escapeXml(result);
 
-  // Cloudflare Worker မှာ Image Transform မသုံးဘဲ
-  // မူလပုံကို Telegram ဆီပို့ပြီး Caption ထဲမှာ
-  // Date / Time / Result ထည့်ပေးမယ့်ပုံစံ
-  //
-  // သတိပြုရန်:
-  // Cloudflare Worker ရဲ့ ပုံပေါ်မှာ စာသားကို တကယ်ရေးဖို့
-  // ImageMagick / Sharp လို image processing library
-  // လိုအပ်ပါတယ်။ Worker ထဲမှာ တိုက်ရိုက် canvas မရနိုင်တဲ့အတွက်
-  // ဒီ function က လက်ရှိအတိုင်း background ပုံကိုပဲ ပြန်ပေးထားပါတယ်။
+  const svg = `
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="1080"
+  height="1080"
+  viewBox="0 0 1080 1080"
+>
+  <image
+    href="${backgroundUrl}"
+    x="0"
+    y="0"
+    width="1080"
+    height="1080"
+    preserveAspectRatio="xMidYMid slice"
+  />
+
+  <rect
+    x="50"
+    y="760"
+    width="980"
+    height="260"
+    rx="30"
+    fill="black"
+    fill-opacity="0.65"
+  />
+
+  <text
+    x="90"
+    y="825"
+    fill="white"
+    font-size="42"
+    font-family="Arial, sans-serif"
+    font-weight="bold"
+  >
+    📅 ${safeDate}
+  </text>
+
+  <text
+    x="90"
+    y="890"
+    fill="white"
+    font-size="42"
+    font-family="Arial, sans-serif"
+    font-weight="bold"
+  >
+    ⏰ ${safeTime}
+  </text>
+
+  <text
+    x="90"
+    y="970"
+    fill="white"
+    font-size="58"
+    font-family="Arial, sans-serif"
+    font-weight="bold"
+  >
+    🎯 Result: ${safeResult}
+  </text>
+</svg>
+`;
 
   return {
-    photo: new Blob([imageBuffer], {
-      type: response.headers.get("content-type") || "image/jpeg",
-    }),
+    photo: new Blob(
+      [svg],
+      {
+        type: "image/svg+xml",
+      }
+    ),
 
     caption: `📅 ${date}
 ⏰ ${time}
@@ -35,3 +88,12 @@ export async function createPoster(
 🎯 Result: ${result}`,
   };
 }
+
+function escapeXml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+            }
