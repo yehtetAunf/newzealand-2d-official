@@ -624,19 +624,29 @@ async function syncStateToDatabase(env, data, shouldNotify) {
   }
 
   const status = normalizeStatus(data);
-  const previousStatus = await getSetting(env, "last_app_status");
-  if (!previousStatus) {
+const previousStatus = await getSetting(env, "last_app_status");
+
+if (!previousStatus) {
+  await setSetting(env, "last_app_status", status.key);
+
+} else if (previousStatus !== status.key && status.kind !== "UNKNOWN") {
+
+  if (!initialized) {
     await setSetting(env, "last_app_status", status.key);
-  } else if (previousStatus !== status.key && status.kind !== "UNKNOWN") {
-    if (!initialized) {
-      await setSetting(env, "last_app_status", status.key);
-    } else if (shouldNotify) {
-      await broadcastToSubscribers(env, formatStatusMessage(data), {
-        reply_markup: statusKeyboard(),
-      });
-      await setSetting(env, "last_app_status", status.key);
-    }
+
+  } else if (shouldNotify) {
+
+    await broadcastToSubscribers(env, formatStatusMessage(data), {
+      reply_markup: statusKeyboard(),
+    });
+
+    await broadcastToChannels(env, formatStatusMessage(data), {
+      reply_markup: statusKeyboard(),
+    });
+
+    await setSetting(env, "last_app_status", status.key);
   }
+      }
 
   return { initialized, eventCount: events.length, status: status.key };
 }
