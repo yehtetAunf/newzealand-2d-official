@@ -194,7 +194,7 @@ async function setSetting(env, key, value) {
 
 async function acquireCronLock(env) {
   const now = Math.floor(Date.now() / 1000);
-  const expires = now + 12 * 60;
+  const expires = now + 3 * 60;
   const result = await env.DB.prepare(`
     INSERT INTO bot_settings (key, value, updated_at)
     VALUES ('cron_lock_until', ?, CURRENT_TIMESTAMP)
