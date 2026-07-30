@@ -1666,13 +1666,12 @@ async function autoPost(env) {
 
   for (const channel of channels) {
 
-    await sendPhoto(
+    await telegramSendPhoto(
   env.BOT_TOKEN,
   channel.channel_id,
   poster.photo,
   poster.caption
 );
-
   }
 
 
