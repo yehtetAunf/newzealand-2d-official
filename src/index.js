@@ -109,12 +109,13 @@ async function telegramSendPhoto(token, chatId, photo, caption = "") {
 
   const result = await response.json();
 
-  if (!response.ok || result.ok !== true) {
-    throw new Error(
-      result.description ||
-      `Telegram sendPhoto failed: ${response.status}`
-    );
-  }
+if (!response.ok || result.ok !== true) {
+  throw new Error(
+    `Telegram sendPhoto failed: ${response.status} - ${
+      result.description || "Unknown Telegram error"
+    }`
+  );
+}
 
   return result;
 }
