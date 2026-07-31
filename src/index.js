@@ -85,8 +85,6 @@ async function telegramRequest(token, method, data = {}, options = {}) {
   
 throw new Error("Telegram request failed");
       }
-
-// ဒီနေရာကနေ စထည့်ပါ
 async function telegramSendPhoto(token, chatId, photo, caption = "") {
   const form = new FormData();
 
@@ -112,13 +110,13 @@ async function telegramSendPhoto(token, chatId, photo, caption = "") {
 
   const result = await response.json();
 
-if (!response.ok || result.ok !== true) {
-  throw new Error(
-    `Telegram sendPhoto failed: ${response.status} - ${
-      result.description || "Unknown Telegram error"
-    }`
-  );
-}
+  if (!response.ok || result.ok !== true) {
+    throw new Error(
+      `Telegram sendPhoto failed: ${response.status} - ${
+        result.description || "Unknown Telegram error"
+      }`
+    );
+  }
 
   return result;
 }
