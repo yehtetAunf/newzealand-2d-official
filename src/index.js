@@ -1,4 +1,6 @@
 // ===== File 1: index (5).js =====
+import { createPoster } from "./poster.js";
+
 const STATE_API_URL =
   "https://newzealand2d.com/api/state";
 const APP_URL = "https://newzealand2d.com/app";
