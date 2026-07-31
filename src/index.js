@@ -120,16 +120,32 @@ if (!response.ok || result.ok !== true) {
 
   return result;
 }
+
 async function fetchLiveState(env) {
-  const response = await fetch(env.API_URL, {
-    headers: { Accept: "application/json", "Cache-Control": "no-cache" },
-    cf: { cacheTtl: 0, cacheEverything: false },
+  const apiUrl =
+    "https://nz-six-times-2d-2026.yehtetaung7655.workers.dev/api/state";
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      Accept: "application/json",
+      "Cache-Control": "no-cache",
+    },
+    cf: {
+      cacheTtl: 0,
+      cacheEverything: false,
+    },
   });
 
-  if (!response.ok) throw new Error(`2D API error: ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`2D API error: ${response.status}`);
+  }
 
   const data = await response.json();
-  if (!data || data.success !== true) throw new Error("2D Live Data မရရှိပါ");
+
+  if (!data || data.success !== true) {
+    throw new Error("2D Live Data မရရှိပါ");
+  }
+
   return data;
 }
 
