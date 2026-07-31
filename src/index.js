@@ -85,19 +85,42 @@ async function telegramRequest(token, method, data = {}, options = {}) {
   
 throw new Error("Telegram request failed");
       }
+
 async function telegramSendPhoto(token, chatId, photo, caption = "") {
+  if (!token) {
+    throw new Error("BOT_TOKEN is missing");
+  }
+
+  if (!chatId) {
+    throw new Error("Telegram chat_id is missing");
+  }
+
+  if (!photo) {
+    throw new Error("Photo is missing");
+  }
+
   const form = new FormData();
 
   form.append("chat_id", String(chatId));
 
   if (photo instanceof Blob) {
     form.append("photo", photo, "poster.jpg");
+  } else if (photo instanceof ArrayBuffer) {
+    const blob = new Blob([photo], {
+      type: "image/jpeg",
+    });
+
+    form.append("photo", blob, "poster.jpg");
+  } else if (typeof photo === "string") {
+    form.append("photo", photo);
   } else {
-    form.append("photo", String(photo));
+    throw new Error(
+      `Unsupported photo type: ${Object.prototype.toString.call(photo)}`
+    );
   }
 
   if (caption) {
-    form.append("caption", caption);
+    form.append("caption", String(caption));
   }
 
   const response = await fetch(
@@ -108,7 +131,15 @@ async function telegramSendPhoto(token, chatId, photo, caption = "") {
     }
   );
 
-  const result = await response.json();
+  let result;
+
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error(
+      `Telegram sendPhoto failed: ${response.status} - Invalid JSON response`
+    );
+  }
 
   if (!response.ok || result.ok !== true) {
     throw new Error(
