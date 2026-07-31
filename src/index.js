@@ -813,7 +813,7 @@ async function refreshLiveMessage(env, callbackQuery) {
   if (!chatId || !messageId) return;
 
   try {
-    const data = await fetchLiveState();
+    const data = await fetchLiveState(env);
     await syncStateToDatabase(env, data, false);
     await telegramRequest(env.BOT_TOKEN, "editMessageText", {
       chat_id: chatId,
