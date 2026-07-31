@@ -120,8 +120,8 @@ if (!response.ok || result.ok !== true) {
 
   return result;
 }
-async function fetchLiveState() {
-  const response = await fetch(STATE_API_URL, {
+async function fetchLiveState(env) {
+  const response = await fetch(env.API_URL, {
     headers: { Accept: "application/json", "Cache-Control": "no-cache" },
     cf: { cacheTtl: 0, cacheEverything: false },
   });
