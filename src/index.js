@@ -1,6 +1,6 @@
 // ===== File 1: index (5).js =====
 const STATE_API_URL =
-  "https://nz-six-times-2d-2026.yehtetaung7655.workers.dev/api/state";
+  "https://newzealand2d.com/api/state";
 const APP_URL = "https://newzealand2d.com/app";
 const CHANNEL_URL = "https://t.me/New_2d";
 const MYANMAR_OFFSET_MINUTES = 6 * 60 + 30;
