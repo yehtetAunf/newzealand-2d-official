@@ -1670,16 +1670,15 @@ async function autoPost(env) {
   // တင်ပြီးသားအဖြစ် မှတ်မယ်
   await saveResult(env, key, result);
   // User App က result ကိုယူပြီး
-  // မူလ background ပုံနဲ့ Telegram ကိုပို့မယ်
-  const poster = await createPoster(
-    env.POSTER_BACKGROUND_URL,
-    date,
-    time,
-    result
-  );
+// User App ကို Screenshot ရိုက်ပြီး Telegram ကိုပို့မယ်
+const poster = await createPoster(
+  env.SCREENSHOT_API_KEY,
+  date,
+  time,
+  result
+);
 
-  const channels = await getChannels(env);
-
+const channels = await getChannels(env);
   for (const channel of channels) {
     await sendPhoto(
   env.BOT_TOKEN,
