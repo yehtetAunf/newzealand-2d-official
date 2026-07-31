@@ -125,6 +125,8 @@ async function fetchLiveState(env) {
   const apiUrl =
     "https://nz-six-times-2d-2026.yehtetaung7655.workers.dev/api/state";
 
+  console.log("[fetchLiveState] API URL:", apiUrl);
+
   const response = await fetch(apiUrl, {
     headers: {
       Accept: "application/json",
@@ -136,18 +138,21 @@ async function fetchLiveState(env) {
     },
   });
 
+  console.log("[fetchLiveState] Status:", response.status);
+  console.log("[fetchLiveState] Final URL:", response.url);
+
   if (!response.ok) {
+    const body = await response.text();
+    console.error("[fetchLiveState] Error Body:", body);
+
     throw new Error(`2D API error: ${response.status}`);
   }
 
   const data = await response.json();
-
-  if (!data || data.success !== true) {
-    throw new Error("2D Live Data မရရှိပါ");
-  }
+  console.log("[fetchLiveState] Success:", JSON.stringify(data));
 
   return data;
-}
+      }
 
 function schemaStatements(env) {
   return [
