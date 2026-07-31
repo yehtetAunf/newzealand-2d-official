@@ -123,7 +123,7 @@ if (!response.ok || result.ok !== true) {
 
 async function fetchLiveState(env) {
   const apiUrl =
-    "https://nz-six-times-2d-2026.yehtetaung7655.workers.dev/api/state";
+  "https://newzealand2d.com/api/state"
 
   console.log("[fetchLiveState] API URL:", apiUrl);
 
