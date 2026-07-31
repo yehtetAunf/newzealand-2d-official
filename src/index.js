@@ -963,7 +963,7 @@ function historyKeyboard() {
 async function sendHistoryDay(env, chatId, dateString) {
   if (dateString === todayMyanmar()) {
     try {
-      const data = await fetchLiveState();
+      const data = await fetchLiveState(env);
       await syncStateToDatabase(env, data, false);
     } catch (error) {
       console.error("History sync failed", error);
@@ -980,7 +980,7 @@ async function sendHistoryDay(env, chatId, dateString) {
 
 async function sendSevenDayHistory(env, chatId) {
   try {
-    const data = await fetchLiveState();
+    const data = await fetchLiveState(env);
     await syncStateToDatabase(env, data, false);
   } catch (error) {
     console.error("7-day history sync failed", error);
@@ -1421,7 +1421,7 @@ async function handleUpdate(env, update, origin) {
 async function setupWebhook(env, origin) {
   await ensureSchema(env);
   try {
-    const state = await fetchLiveState();
+    const data = await fetchLiveState(env);
     await syncStateToDatabase(env, state, false);
   } catch (error) {
     console.error("Initial state sync failed", error);
@@ -1491,7 +1491,7 @@ async function runScheduled(env) {
 
   try {
     try {
-      const data = await fetchLiveState();
+      const data = await fetchLiveState(env);
       const sync = await syncStateToDatabase(env, data, true);
       console.log("State sync complete", sync);
     } catch (error) {
