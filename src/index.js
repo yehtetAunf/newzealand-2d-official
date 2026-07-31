@@ -1690,18 +1690,27 @@ async function autoPost(env) {
 
   // တင်ပြီးသားအဖြစ် မှတ်မယ်
   await saveResult(env, key, result);
-  // User App က result ကိုယူပြီး
-// User App ကို Screenshot ရိုက်ပြီး Telegram ကိုပို့မယ်
+
+// User App ကို Screenshot ရိုက်ပြီး Telegram ကို ပုံအနေနဲ့ပို့မယ်
+const poster = await createPoster(
+  env.SCREENSHOT_API_KEY,
+  date,
+  time,
+  result
+);
+
 const channels = await getChannels(env);
 
 for (const channel of channels) {
-  await telegramRequest(env.BOT_TOKEN, "sendMessage", {
-    chat_id: channel.channel_id,
-    text: `🇳🇿 New Zealand 2D Official\n\n📅 ${date}\n⏰ ${time}\n🎯 Result: ${result}`,
-  });
+  await telegramSendPhoto(
+    env.BOT_TOKEN,
+    channel.channel_id,
+    poster.photo,
+    poster.caption
+  );
 }
 
-  return "Posted";
+return "Posted";
 }
 
 const legacyWorkerHandlers = {
