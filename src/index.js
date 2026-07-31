@@ -148,21 +148,20 @@ async function captureAppScreenshot(env) {
   if (!env.SCREENSHOT_API_KEY) throw new Error("SCREENSHOT_API_KEY is missing");
 
   const query = new URLSearchParams({
-    access_key: env.SCREENSHOT_API_KEY,
-    url: screenshotPageUrl(env) + "?screenshot=1",
-    format: "jpg",
-    response_type: "by_format",
-    full_page: "true",
-    wait_until: "network_idle",
-    viewport_width: "430",
-viewport_height: "932",
-device_scale_factor: "3",
-delay: String(env.SCREENSHOT_DELAY_SECONDS || "5"),
-image_quality: "100",
-    block_ads: "true",
-    block_cookie_banners: "true",
-    cache: "false",
-  });
+  access_key: env.SCREENSHOT_API_KEY,
+  url: screenshotPageUrl(env) + "?screenshot=1",
+  format: "jpg",
+  response_type: "by_format",
+  full_page: "true",
+  viewport_width: "430",
+  viewport_height: "932",
+  device_scale_factor: "2",
+  delay: String(env.SCREENSHOT_DELAY_SECONDS || "3"),
+  image_quality: "90",
+  block_ads: "true",
+  block_cookie_banners: "true",
+  cache: "false",
+});
 
   const timeout = withTimeout(45_000);
   try {
