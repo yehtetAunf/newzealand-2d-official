@@ -110,6 +110,79 @@ async function telegramRequest(token, method, data = {}, options = {}) {
   throw new Error("Telegram request failed");
 }
 
+async function telegramUploadPhoto(token, chatId, imageBlob, caption, replyMarkup) {
+  const form = new FormData();
+  form.set("chat_id", String(chatId));
+  form.set("photo", imageBlob, "newzealand-2d-result.jpg");
+  form.set("caption", caption);
+  if (replyMarkup) form.set("reply_markup", JSON.stringify(replyMarkup));
+
+  const timeout = withTimeout(30_000);
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      method: "POST",
+      body: form,
+      signal: timeout.signal,
+    });
+    const result = await response.json().catch(() => ({
+      ok: false,
+      description: `Telegram API returned ${response.status}`,
+    }));
+    if (response.ok && result.ok === true) return result;
+    throw new TelegramApiError(
+      result.description || `Telegram API error: ${response.status}`,
+      response.status,
+      result.error_code,
+      result.parameters
+    );
+  } finally {
+    timeout.clear();
+  }
+}
+
+function screenshotPageUrl(env) {
+  return String(env.SCREENSHOT_PAGE_URL || env.APP_URL || APP_URL).trim();
+}
+
+async function captureAppScreenshot(env) {
+  if (!env.SCREENSHOT_API_KEY) throw new Error("SCREENSHOT_API_KEY is missing");
+
+  const query = new URLSearchParams({
+    access_key: env.SCREENSHOT_API_KEY,
+    url: screenshotPageUrl(env),
+    format: "jpg",
+    response_type: "by_format",
+    full_page: "true",
+    viewport_width: "430",
+    viewport_height: "932",
+    device_scale_factor: "2",
+    delay: String(env.SCREENSHOT_DELAY_SECONDS || "5"),
+    image_quality: "90",
+    block_ads: "true",
+    block_cookie_banners: "true",
+    cache: "false",
+  });
+
+  const timeout = withTimeout(45_000);
+  try {
+    const response = await fetch(`https://api.screenshotone.com/take?${query}`, {
+      signal: timeout.signal,
+      cf: { cacheTtl: 0, cacheEverything: false },
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new Error(`Screenshot API failed: ${response.status} ${detail.slice(0, 180)}`);
+    }
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.startsWith("image/")) {
+      throw new Error(`Screenshot API returned ${contentType || "non-image content"}`);
+    }
+    return response.blob();
+  } finally {
+    timeout.clear();
+  }
+}
+
 async function fetchLiveState() {
   const timeout = withTimeout(12_000);
   try {
@@ -151,6 +224,21 @@ function schemaStatements(env) {
     env.DB.prepare(`
       CREATE INDEX IF NOT EXISTS idx_subscribers_active
       ON subscribers (is_active, notifications_enabled)
+    `),
+    env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS post_targets (
+        chat_id TEXT PRIMARY KEY,
+        chat_type TEXT NOT NULL,
+        title TEXT,
+        username TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `),
+    env.DB.prepare(`
+      CREATE INDEX IF NOT EXISTS idx_post_targets_active
+      ON post_targets (is_active, chat_type)
     `),
     env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS results (
@@ -490,6 +578,48 @@ async function upsertSubscriber(env, messageOrCallback) {
   ).run();
 }
 
+async function upsertPostTarget(env, chat) {
+  if (!chat || !["group", "supergroup", "channel"].includes(chat.type)) return false;
+
+  await env.DB.prepare(`
+    INSERT INTO post_targets (chat_id, chat_type, title, username, is_active, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT(chat_id) DO UPDATE SET
+      chat_type = excluded.chat_type,
+      title = excluded.title,
+      username = excluded.username,
+      is_active = 1,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    String(chat.id),
+    chat.type,
+    chat.title || null,
+    chat.username || null
+  ).run();
+  return true;
+}
+
+async function setPostTargetActive(env, chatId, active) {
+  await env.DB.prepare(`
+    UPDATE post_targets SET is_active = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE chat_id = ?
+  `).bind(active ? 1 : 0, String(chatId)).run();
+}
+
+async function userIsChatAdmin(env, chatId, userId) {
+  if (!userId) return false;
+  try {
+    const result = await telegramRequest(env.BOT_TOKEN, "getChatMember", {
+      chat_id: chatId,
+      user_id: userId,
+    });
+    return ["creator", "administrator"].includes(result?.result?.status);
+  } catch (error) {
+    console.error("Admin check failed", chatId, userId, error);
+    return false;
+  }
+}
+
 async function getSubscriber(env, chatId) {
   return env.DB.prepare(`
     SELECT chat_id, notifications_enabled, is_active
@@ -575,6 +705,122 @@ async function broadcastToSubscribers(env, text, extra = {}) {
   return stats;
 }
 
+async function broadcastToPostTargets(env, text, extra = {}) {
+  const stats = { total: 0, sent: 0, failed: 0, inactive: 0 };
+  const page = await env.DB.prepare(`
+    SELECT chat_id, chat_type, title
+    FROM post_targets
+    WHERE is_active = 1
+    ORDER BY created_at
+  `).all();
+
+  for (const row of page.results || []) {
+    stats.total += 1;
+    try {
+      await telegramRequest(env.BOT_TOKEN, "sendMessage", {
+        chat_id: row.chat_id,
+        text,
+        link_preview_options: { is_disabled: true },
+        ...extra,
+      });
+      stats.sent += 1;
+    } catch (error) {
+      stats.failed += 1;
+      if (isPermanentChatError(error)) {
+        stats.inactive += 1;
+        await setPostTargetActive(env, row.chat_id, false);
+      } else {
+        console.error("Post target send failed", row.chat_id, row.title, error);
+      }
+    }
+    await sleep(80);
+  }
+  return stats;
+}
+
+async function notifyAllDestinations(env, text, extra = {}) {
+  const [subscribers, targets] = await Promise.all([
+    broadcastToSubscribers(env, text, extra),
+    broadcastToPostTargets(env, text, extra),
+  ]);
+  console.log("Auto notification complete", { subscribers, targets });
+  return { subscribers, targets };
+}
+
+async function listPhotoDestinations(env) {
+  const [subscriberPage, targetPage] = await Promise.all([
+    env.DB.prepare(`
+      SELECT chat_id, 'private' AS chat_type, username AS title
+      FROM subscribers
+      WHERE is_active = 1 AND notifications_enabled = 1
+      ORDER BY chat_id
+    `).all(),
+    env.DB.prepare(`
+      SELECT chat_id, chat_type, title
+      FROM post_targets
+      WHERE is_active = 1
+      ORDER BY created_at
+    `).all(),
+  ]);
+
+  const unique = new Map();
+  for (const row of [...(subscriberPage.results || []), ...(targetPage.results || [])]) {
+    unique.set(String(row.chat_id), row);
+  }
+  return [...unique.values()];
+}
+
+function telegramPhotoFileId(result) {
+  const photos = result?.result?.photo;
+  return Array.isArray(photos) && photos.length ? photos[photos.length - 1].file_id : null;
+}
+
+async function notifyAllDestinationsWithPhoto(env, caption, replyMarkup) {
+  const destinations = await listPhotoDestinations(env);
+  const stats = { total: destinations.length, sent: 0, failed: 0, inactive: 0 };
+  if (destinations.length === 0) return stats;
+
+  const imageBlob = await captureAppScreenshot(env);
+  let reusableFileId = null;
+
+  for (const row of destinations) {
+    try {
+      let result;
+      if (reusableFileId) {
+        result = await telegramRequest(env.BOT_TOKEN, "sendPhoto", {
+          chat_id: row.chat_id,
+          photo: reusableFileId,
+          caption,
+          reply_markup: replyMarkup,
+        });
+      } else {
+        result = await telegramUploadPhoto(
+          env.BOT_TOKEN,
+          row.chat_id,
+          imageBlob,
+          caption,
+          replyMarkup
+        );
+        reusableFileId = telegramPhotoFileId(result);
+      }
+      stats.sent += 1;
+    } catch (error) {
+      stats.failed += 1;
+      if (isPermanentChatError(error)) {
+        stats.inactive += 1;
+        if (row.chat_type === "private") await markSubscriberInactive(env, row.chat_id);
+        else await setPostTargetActive(env, row.chat_id, false);
+      } else {
+        console.error("Photo notification failed", row.chat_id, row.title, error);
+      }
+    }
+    await sleep(90);
+  }
+
+  console.log("Photo auto notification complete", stats);
+  return stats;
+}
+
 function resultNotificationText(record, changed = false) {
   const lines = [
     changed ? "♻️ New Zealand 2D Result ပြင်ဆင်ချက်" : "🔔 New Zealand 2D Result",
@@ -619,7 +865,12 @@ async function syncStateToDatabase(env, data, shouldNotify) {
   } else if (shouldNotify) {
     for (const event of events) {
       const text = resultNotificationText(event.record, event.state === "changed");
-      await broadcastToSubscribers(env, text, { reply_markup: notificationKeyboard() });
+      try {
+        await notifyAllDestinationsWithPhoto(env, text, notificationKeyboard());
+      } catch (error) {
+        console.error("Screenshot/photo notification failed; using text fallback", error);
+        await notifyAllDestinations(env, text, { reply_markup: notificationKeyboard() });
+      }
       await markResultNotified(env, event.record);
     }
   }
@@ -632,7 +883,7 @@ async function syncStateToDatabase(env, data, shouldNotify) {
     if (!initialized) {
       await setSetting(env, "last_app_status", status.key);
     } else if (shouldNotify) {
-      await broadcastToSubscribers(env, formatStatusMessage(data), {
+      await notifyAllDestinations(env, formatStatusMessage(data), {
         reply_markup: statusKeyboard(),
       });
       await setSetting(env, "last_app_status", status.key);
@@ -1335,6 +1586,26 @@ async function handleMessage(env, message, origin) {
       text: `🆔 Your Telegram User ID — ${message.from?.id || "--"}\nChat ID — ${chatId}`,
     });
   }
+  if (command === "/register") {
+    if (!["group", "supergroup"].includes(message.chat?.type)) {
+      return telegramRequest(env.BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "ဒီ Command ကို Group ထဲမှာပဲ သုံးပါ။" });
+    }
+    if (!(await userIsChatAdmin(env, chatId, message.from?.id))) {
+      return telegramRequest(env.BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Group Admin ကပဲ Auto Post ဖွင့်နိုင်ပါတယ်။" });
+    }
+    await upsertPostTarget(env, message.chat);
+    return telegramRequest(env.BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "✅ ဒီ Group ကို Result Auto Post စာရင်းထဲ ထည့်ပြီးပါပြီ။" });
+  }
+  if (command === "/unregister") {
+    if (!["group", "supergroup"].includes(message.chat?.type)) {
+      return telegramRequest(env.BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "ဒီ Command ကို Group ထဲမှာပဲ သုံးပါ။" });
+    }
+    if (!(await userIsChatAdmin(env, chatId, message.from?.id))) {
+      return telegramRequest(env.BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Group Admin ကပဲ Auto Post ပိတ်နိုင်ပါတယ်။" });
+    }
+    await setPostTargetActive(env, chatId, false);
+    return telegramRequest(env.BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "🔕 ဒီ Group ရဲ့ Result Auto Post ကို ပိတ်ပြီးပါပြီ။" });
+  }
   if (command === "/broadcast") return createBroadcastDraft(env, message);
 
   return telegramRequest(env.BOT_TOKEN, "sendMessage", {
@@ -1346,6 +1617,26 @@ async function handleMessage(env, message, origin) {
 
 async function handleUpdate(env, update, origin) {
   await ensureSchema(env);
+
+  if (update.my_chat_member) {
+    const chat = update.my_chat_member.chat;
+    const status = update.my_chat_member.new_chat_member?.status;
+    if (["administrator", "member"].includes(status)) {
+      await upsertPostTarget(env, chat);
+      console.log("Post target registered", chat.id, chat.type, chat.title || chat.username || "");
+    } else if (["left", "kicked"].includes(status)) {
+      await setPostTargetActive(env, chat.id, false);
+      console.log("Post target disabled", chat.id, status);
+    }
+    return;
+  }
+
+  if (update.channel_post) {
+    await upsertPostTarget(env, update.channel_post.chat);
+    console.log("Channel registered from channel_post", update.channel_post.chat.id);
+    return;
+  }
+
   if (update.message) {
     await upsertSubscriber(env, update.message);
     await handleMessage(env, update.message, origin);
@@ -1369,7 +1660,7 @@ async function setupWebhook(env, origin) {
   const webhook = await telegramRequest(env.BOT_TOKEN, "setWebhook", {
     url: `${origin}/webhook`,
     secret_token: env.WEBHOOK_SECRET,
-    allowed_updates: ["message", "callback_query"],
+    allowed_updates: ["message", "callback_query", "channel_post", "my_chat_member"],
     drop_pending_updates: false,
   });
 
@@ -1386,6 +1677,8 @@ async function setupWebhook(env, origin) {
       { command: "privacy", description: "Privacy Policy" },
       { command: "delete_me", description: "မိမိ Bot ဒေတာဖျက်ရန်" },
       { command: "myid", description: "မိမိ Telegram ID ကြည့်ရန်" },
+      { command: "register", description: "Group Auto Post ဖွင့်ရန်" },
+      { command: "unregister", description: "Group Auto Post ပိတ်ရန်" },
     ],
   });
 
