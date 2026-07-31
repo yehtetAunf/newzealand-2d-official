@@ -23,8 +23,20 @@ export async function createPoster(
       block_cookie_banners: "true"
     }).toString();
 
+  // Screenshot URL ကို အရင် fetch လုပ်ပြီး
+  // တကယ့် Image Blob အဖြစ် ပြောင်းမယ်
+  const imageResponse = await fetch(screenshotUrl);
+
+  if (!imageResponse.ok) {
+    throw new Error(
+      `Screenshot API failed: ${imageResponse.status}`
+    );
+  }
+
+  const imageBlob = await imageResponse.blob();
+
   return {
-    photo: screenshotUrl,
+    photo: imageBlob,
     caption: `📅 ${date}
 ⏰ ${time}
 
