@@ -1474,7 +1474,7 @@ async function setupWebhook(env, origin) {
   await ensureSchema(env);
   try {
     const data = await fetchLiveState(env);
-    await syncStateToDatabase(env, state, false);
+    await syncStateToDatabase(env, data, false);
   } catch (error) {
     console.error("Initial state sync failed", error);
   }
