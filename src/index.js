@@ -902,7 +902,7 @@ function statusKeyboard() {
 
 async function sendStatus(env, chatId) {
   try {
-    const data = await fetchLiveState();
+    const data = await fetchLiveState(env);
     await syncStateToDatabase(env, data, false);
     await telegramRequest(env.BOT_TOKEN, "sendMessage", {
       chat_id: chatId,
