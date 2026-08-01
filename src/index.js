@@ -1310,6 +1310,44 @@ function isAdmin(env, userId) {
   return ids.includes(String(userId));
 }
 
+async function sendPostTargetList(env, message, requestedType) {
+  if (!isAdmin(env, message.from?.id)) {
+    return telegramRequest(env.BOT_TOKEN, "sendMessage", {
+      chat_id: message.chat.id,
+      text: "⛔ ဒီ Command ကို Bot Admin သာ အသုံးပြုနိုင်ပါတယ်။",
+    });
+  }
+
+  const rows = await env.DB.prepare(`
+    SELECT chat_id, chat_type, title, username, is_active, updated_at
+    FROM post_targets
+    WHERE chat_type = ?
+    ORDER BY is_active DESC, updated_at DESC
+    LIMIT 100
+  `).bind(requestedType).all();
+
+  const items = rows.results || [];
+  const label = requestedType === "channel" ? "Channels" : "Groups";
+  if (!items.length) {
+    return telegramRequest(env.BOT_TOKEN, "sendMessage", {
+      chat_id: message.chat.id,
+      text: `📭 Registered ${label} မရှိသေးပါ။`,
+    });
+  }
+
+  const lines = [`📋 Registered ${label} — ${items.length}`, ""];
+  for (const row of items) {
+    const name = row.title || (row.username ? `@${row.username}` : row.chat_id);
+    lines.push(`${row.is_active ? "✅" : "⛔"} ${name}`);
+    lines.push(`ID: ${row.chat_id}`);
+  }
+
+  return telegramRequest(env.BOT_TOKEN, "sendMessage", {
+    chat_id: message.chat.id,
+    text: lines.join("\n").slice(0, 4000),
+  });
+}
+
 async function createBroadcastDraft(env, message) {
   if (!isAdmin(env, message.from?.id)) {
     await telegramRequest(env.BOT_TOKEN, "sendMessage", {
@@ -1429,7 +1467,13 @@ async function processQueuedBroadcast(env) {
   if (Number(claimed?.meta?.changes || 0) === 0) return null;
 
   try {
-    const stats = await broadcastToSubscribers(env, `📢 New Zealand 2D အသိပေးချက်\n\n${draft.text}`);
+    const combined = await notifyAllDestinations(env, `📢 New Zealand 2D အသိပေးချက်\n\n${draft.text}`);
+    const stats = {
+      total: combined.subscribers.total + combined.targets.total,
+      sent: combined.subscribers.sent + combined.targets.sent,
+      failed: combined.subscribers.failed + combined.targets.failed,
+      inactive: combined.subscribers.inactive + combined.targets.inactive,
+    };
     await env.DB.prepare(`
       UPDATE broadcast_drafts SET
         status = 'sent', total_count = ?, sent_count = ?, failed_count = ?,
@@ -1606,6 +1650,8 @@ async function handleMessage(env, message, origin) {
     await setPostTargetActive(env, chatId, false);
     return telegramRequest(env.BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "🔕 ဒီ Group ရဲ့ Result Auto Post ကို ပိတ်ပြီးပါပြီ။" });
   }
+  if (command === "/channels") return sendPostTargetList(env, message, "channel");
+  if (command === "/groups") return sendPostTargetList(env, message, "group");
   if (command === "/broadcast") return createBroadcastDraft(env, message);
 
   return telegramRequest(env.BOT_TOKEN, "sendMessage", {
@@ -1621,12 +1667,12 @@ async function handleUpdate(env, update, origin) {
   if (update.my_chat_member) {
     const chat = update.my_chat_member.chat;
     const status = update.my_chat_member.new_chat_member?.status;
-    if (["administrator", "member"].includes(status)) {
+    if (status === "administrator") {
       await upsertPostTarget(env, chat);
-      console.log("Post target registered", chat.id, chat.type, chat.title || chat.username || "");
-    } else if (["left", "kicked"].includes(status)) {
+      console.log("Post target registered after bot became admin", chat.id, chat.type, chat.title || chat.username || "");
+    } else if (["member", "restricted", "left", "kicked"].includes(status)) {
       await setPostTargetActive(env, chat.id, false);
-      console.log("Post target disabled", chat.id, status);
+      console.log("Post target disabled because bot is not admin", chat.id, status);
     }
     return;
   }
@@ -1679,6 +1725,9 @@ async function setupWebhook(env, origin) {
       { command: "myid", description: "မိမိ Telegram ID ကြည့်ရန်" },
       { command: "register", description: "Group Auto Post ဖွင့်ရန်" },
       { command: "unregister", description: "Group Auto Post ပိတ်ရန်" },
+      { command: "channels", description: "Registered Channels စာရင်း (Admin)" },
+      { command: "groups", description: "Registered Groups စာရင်း (Admin)" },
+      { command: "broadcast", description: "အားလုံးသို့ ကြေညာချက်ပို့ရန် (Admin)" },
     ],
   });
 
