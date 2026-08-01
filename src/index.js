@@ -1666,13 +1666,27 @@ async function handleUpdate(env, update, origin) {
 
   if (update.my_chat_member) {
     const chat = update.my_chat_member.chat;
-    const status = update.my_chat_member.new_chat_member?.status;
-    if (status === "administrator") {
+    const member = update.my_chat_member.new_chat_member || {};
+    const status = member.status;
+    const isAdmin = ["administrator", "creator"].includes(status);
+    const canPost = chat?.type !== "channel" || status === "creator" || member.can_post_messages === true;
+
+    if (isAdmin && canPost) {
       await upsertPostTarget(env, chat);
-      console.log("Post target registered after bot became admin", chat.id, chat.type, chat.title || chat.username || "");
-    } else if (["member", "restricted", "left", "kicked"].includes(status)) {
+      console.log(
+        "Post target registered after bot became admin",
+        chat.id,
+        chat.type,
+        chat.title || chat.username || ""
+      );
+    } else {
       await setPostTargetActive(env, chat.id, false);
-      console.log("Post target disabled because bot is not admin", chat.id, status);
+      console.log(
+        "Post target disabled because bot is not admin or cannot post",
+        chat.id,
+        status,
+        member.can_post_messages
+      );
     }
     return;
   }
