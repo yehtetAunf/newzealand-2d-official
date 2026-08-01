@@ -149,10 +149,10 @@ async function captureAppScreenshot(env) {
 
   const query = new URLSearchParams({
     access_key: env.SCREENSHOT_API_KEY,
-    url: screenshotPageUrl(env),
+    url: screenshotPageUrl(env) + "?screenshot=1",
     format: "jpg",
     response_type: "by_format",
-    full_page: "true",
+    full_page: "false",
     viewport_width: "430",
     viewport_height: "932",
     device_scale_factor: "2",
