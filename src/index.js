@@ -1654,11 +1654,9 @@ async function handleMessage(env, message, origin) {
   if (command === "/groups") return sendPostTargetList(env, message, "group");
   if (command === "/broadcast") return createBroadcastDraft(env, message);
 
-  return telegramRequest(env.BOT_TOKEN, "sendMessage", {
-    chat_id: chatId,
-    text: "အောက်က Command တွေကို သုံးနိုင်ပါတယ်—\n/live /history /times /status /help",
-    reply_markup: liveKeyboard(),
-  });
+  // ပုံမှန်စာ၊ ဂဏန်းနှင့် မသိသော Command များကို မတုံ့ပြန်ပါ။
+  // Scheduled Auto Post လုပ်ဆောင်ချက်ကို မထိခိုက်ပါ။
+  return;
 }
 
 async function handleUpdate(env, update, origin) {
