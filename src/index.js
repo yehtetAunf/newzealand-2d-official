@@ -185,44 +185,6 @@ async function captureAppScreenshot(env) {
   }
 }
 
-function tartayLive2D(market) {
-  const setText = String(market?.set ?? "").trim();
-  const valueText = String(market?.value ?? "").trim();
-  const setDigits = setText.replace(/\D/g, "");
-  const valueInteger = valueText.split(".")[0].replace(/\D/g, "");
-  if (!setDigits || !valueInteger) return null;
-  return `${setDigits.slice(-1)}${valueInteger.slice(-1)}`;
-}
-
-function normalizeTartayState(data) {
-  const results = Array.isArray(data?.results) ? data.results : [];
-  const market = data?.market && typeof data.market === "object" ? data.market : null;
-  const live2d = tartayLive2D(market);
-
-  return {
-    success: true,
-    date: String(data?.operational_date || data?.myanmarNow?.date || "").trim() || null,
-    serverNow: Number(data?.serverNow) || Date.now(),
-    appStatus: { label: "LIVE" },
-    live: {
-      status: "LIVE",
-      result: live2d,
-      set: String(market?.set ?? "").trim() || null,
-      value: String(market?.value ?? "").trim() || null,
-      updatedAt: String(market?.fetched_at ?? "").trim() || null,
-    },
-    rounds: results.map((row) => ({
-      time: row?.round_time,
-      result: validResult(row?.result_2d),
-      set: String(row?.set_value ?? "").trim() || null,
-      value: String(row?.value_value ?? "").trim() || null,
-      status: "published",
-      updatedAt: row?.updated_at || row?.published_at || null,
-    })),
-    nextRound: data?.nextRound || null,
-  };
-}
-
 async function fetchLiveState() {
   const timeout = withTimeout(12_000);
   try {
@@ -234,11 +196,79 @@ async function fetchLiveState() {
 
     if (!response.ok) throw new Error(`Tartay 2D API error: ${response.status}`);
 
-    const data = await response.json();
-    if (!data || data.success !== true) throw new Error("Tartay 2D Live Data မရရှိပါ");
-    return normalizeTartayState(data);
+    const raw = await response.json();
+    if (!raw || raw.success !== true) {
+      throw new Error("Tartay 2D Live Data မရရှိပါ");
+    }
+
+    // Tartay /api/state returns:
+    // operational_date, market, rounds (time strings), and results
+    // with result_2d/set_value/value_value. Convert it to the
+    // internal schema used by this bot.
+    const date = normalizeApiDate(raw.operational_date || raw.date);
+    const market = raw.market && typeof raw.market === "object" ? raw.market : {};
+    const rawResults = Array.isArray(raw.results) ? raw.results : [];
+    const byTime = new Map(
+      rawResults.map((row) => [
+        normalizeRoundTime(row?.round_time),
+        row
+      ])
+    );
+
+    const sourceRounds = Array.isArray(raw.rounds) && raw.rounds.length
+      ? raw.rounds
+      : ROUND_SCHEDULE.map((item) => item.time);
+
+    const rounds = sourceRounds.map((round) => {
+      const time = typeof round === "string"
+        ? normalizeRoundTime(round)
+        : normalizeRoundTime(round?.round_time || round?.time);
+
+      const row = byTime.get(time);
+      return {
+        time,
+        result: validResult(row?.result_2d ?? row?.result),
+        set: String(row?.set_value ?? row?.set ?? "").trim() || null,
+        value: String(row?.value_value ?? row?.value ?? "").trim() || null,
+        updatedAt: String(row?.updated_at ?? raw.market?.fetched_at ?? "").trim() || null,
+        status: row ? "published" : "pending",
+      };
+    });
+
+    const latest = [...rawResults]
+      .reverse()
+      .find((row) => validResult(row?.result_2d ?? row?.result));
+
+    const holdResult = raw.resultHold?.active
+      ? validResult(raw.resultHold.result_2d)
+      : null;
+
+    return {
+      success: true,
+      app: "Tartay 2D",
+      version: raw.version || "unknown",
+      date,
+      operational_date: date,
+      serverNow: raw.serverNow || Date.now(),
+      live: {
+        status: market.ok ? "LIVE" : "UNKNOWN",
+        set: String(market.set ?? "--"),
+        value: String(market.value ?? "--"),
+        result: holdResult || validResult(latest?.result_2d ?? latest?.result) || "--",
+        updatedAt: String(
+          market.fetched_at ||
+          latest?.updated_at ||
+          new Date(raw.serverNow || Date.now()).toISOString()
+        ),
+      },
+      rounds,
+      rawResults,
+      tartay: raw,
+    };
   } catch (error) {
-    if (error?.name === "AbortError") throw new Error("Tartay 2D API response timeout ဖြစ်နေပါတယ်");
+    if (error?.name === "AbortError") {
+      throw new Error("Tartay 2D API response timeout ဖြစ်နေပါတယ်");
+    }
     throw error;
   } finally {
     timeout.clear();
@@ -863,7 +893,7 @@ async function notifyAllDestinationsWithPhoto(env, caption, replyMarkup) {
 
 function resultNotificationText(record, changed = false) {
   const lines = [
-    changed ? "♻️ New Zealand 2D Result ပြင်ဆင်ချက်" : "🔔 New Zealand 2D Result",
+    changed ? "♻️ TarTay 2D Result ပြင်ဆင်ချက်" : "🔔 TarTay 2D Result",
     "",
     `📅 ${displayDate(record.resultDate)}`,
     `${timeIcon(record.roundTime)} ${record.roundTime} — ${record.result}`,
@@ -939,7 +969,7 @@ function formatLiveMessage(data) {
   const status = normalizeStatus(data);
   const liveResult = validResult(live.result) || "--";
   const lines = [
-    "🇳🇿 New Zealand 2D Live",
+    "🇲🇲 TarTay 2D Live",
     "",
     `📅 Date — ${displayDate(normalizeApiDate(data.date))}`,
     `${statusEmoji(status.kind)} Status — ${status.raw}`,
@@ -1004,7 +1034,7 @@ function welcomeCaption() {
   return [
     "📣 အသိပေးကြေညာချက်",
     "",
-    "NewZealand 2D App မှ ကြိုဆိုပါတယ်။",
+    "TarTay 2D App မှ ကြိုဆိုပါတယ်။",
     "",
     "🔔 Live Result၊ ထွက်ဂဏန်းမှတ်တမ်း၊ အချိန်စာရင်းနဲ့ App Status ကို ဒီ Bot မှာ ကြည့်နိုင်ပါတယ်။",
     "",
@@ -1109,11 +1139,11 @@ function nextRoundInfo() {
 
 function timesMessage() {
   const next = nextRoundInfo();
-  const lines = ["🕘 New Zealand 2D ထွက်ချိန်များ", ""];
+  const lines = ["🕘 TarTay 2D ထွက်ချိန်များ", ""];
   for (const item of ROUND_SCHEDULE) lines.push(`${item.icon} ${item.time}`);
   lines.push(
     "",
-    "တစ်နေ့လျှင် စုစုပေါင်း ၆ ကြိမ်",
+    "တစ်နေ့လျှင် စုစုပေါင်း ၈ ကြိမ်",
     "",
     `⏳ နောက်တစ်ကြိမ် — ${next.dayText} ${next.next.time}`,
     `⌛ ကျန်ချိန် — ${next.remaining === 0 ? "အခု" : `${next.remaining} မိနစ်`}`
@@ -1139,7 +1169,7 @@ function formatStatusMessage(data) {
     UNKNOWN: "App အခြေအနေကို အတည်ပြုမရသေးပါ။",
   };
   return [
-    `${statusEmoji(status.kind)} New Zealand 2D App Status`,
+    `${statusEmoji(status.kind)} TarTay 2D App Status`,
     "",
     `Status — ${status.raw}`,
     messages[status.kind],
@@ -1194,7 +1224,7 @@ async function resultsForDate(env, dateString) {
 
 function formatDayHistory(dateString, rows, showWaiting = false) {
   const byTime = new Map(rows.map((row) => [normalizeRoundTime(row.round_time), row]));
-  const lines = ["📜 New Zealand 2D မှတ်တမ်း", "", `📅 ${displayDate(dateString)}`, ""];
+  const lines = ["📜 TarTay 2D မှတ်တမ်း", "", `📅 ${displayDate(dateString)}`, ""];
 
   for (const item of ROUND_SCHEDULE) {
     const row = byTime.get(item.time);
@@ -1266,7 +1296,7 @@ async function sendSevenDayHistory(env, chatId) {
     groups.get(row.result_date).push(row);
   }
 
-  const lines = ["🗓 New Zealand 2D — ၇ ရက်စာမှတ်တမ်း", ""];
+  const lines = ["🗓 TarTay 2D — ၇ ရက်စာမှတ်တမ်း", ""];
   for (let offset = 0; offset < 7; offset += 1) {
     const date = shiftCanonicalDate(end, -offset);
     const rows = groups.get(date) || [];
@@ -1307,7 +1337,7 @@ function helpKeyboard(env) {
 
 function helpMessage() {
   return [
-    "❓ NewZealand2DLiveBot အကူအညီ",
+    "❓ TarTay2DLiveBot အကူအညီ",
     "",
     "/live — လက်ရှိ Live 2D ကြည့်ရန်",
     "/history — ထွက်ဂဏန်းမှတ်တမ်း",
@@ -1507,7 +1537,7 @@ async function processQueuedBroadcast(env) {
   if (Number(claimed?.meta?.changes || 0) === 0) return null;
 
   try {
-    const combined = await notifyAllDestinations(env, `📢 New Zealand 2D အသိပေးချက်\n\n${draft.text}`);
+    const combined = await notifyAllDestinations(env, `📢 TarTay 2D အသိပေးချက်\n\n${draft.text}`);
     const stats = {
       total: combined.subscribers.total + combined.targets.total,
       sent: combined.subscribers.sent + combined.targets.sent,
@@ -1798,9 +1828,9 @@ function privacyHtml(origin, env) {
   const contact = resolveAdminUrl(env);
   return `<!doctype html>
 <html lang="my">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NewZealand2DLiveBot Privacy</title>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TarTay2DLiveBot Privacy</title>
 <style>body{font-family:system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 18px;line-height:1.7;color:#111}h1{color:#075bbb}.card{background:#f4f7fb;padding:20px;border-radius:16px}a{color:#075bbb}</style></head>
-<body><h1>NewZealand2DLiveBot Privacy Policy</h1><div class="card">
+<body><h1>TarTay2DLiveBot Privacy Policy</h1><div class="card">
 <p>Bot သည် Telegram Chat ID/User ID၊ Username၊ အမည်၊ Language Code၊ Notification Setting နှင့် စတင်အသုံးပြုသည့်အချိန်ကိုသာ Result နှင့် App ကြေညာချက်ပို့ရန် သိမ်းထားနိုင်ပါသည်။</p>
 <p>Password၊ OTP၊ Telegram Login Code၊ Bank PIN နှင့် ငွေပေးချေမှုလျှို့ဝှက်အချက်များကို Bot က မတောင်းပါ၊ မသိမ်းပါ။</p>
 <p>Telegram Bot တွင် <b>/delete_me</b> ကိုနှိပ်ပြီး မိမိ Subscriber ဒေတာကို ဖျက်နိုင်ပါသည်။</p>
@@ -1863,7 +1893,7 @@ export default {
     if (url.pathname === "/health") {
       return Response.json({
         ok: true,
-        service: "New Zealand 2D Live Bot",
+        service: "TarTay 2D Live Bot",
         database: DB_NAME,
         dbBound: Boolean(env.DB),
         botTokenConfigured: Boolean(env.BOT_TOKEN),
@@ -1912,7 +1942,7 @@ export default {
       }
     }
 
-    return new Response("New Zealand 2D Live Bot is running");
+    return new Response("TarTay 2D Live Bot is running");
   },
 
   async scheduled(controller, env, ctx) {

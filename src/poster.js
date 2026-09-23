@@ -1,4 +1,4 @@
-const APP_URL = "https://newzealand2d.com/app";
+const APP_URL = "https://tartay2d.com/";
 
 export async function createPoster(
   screenshotApiKey,
