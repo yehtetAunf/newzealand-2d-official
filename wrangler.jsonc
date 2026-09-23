@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "newzealand-2d-official",
+  "name": "tartay-2d-live-bot",
   "main": "src/index.js",
   "compatibility_date": "2026-07-25",
 
@@ -15,7 +15,7 @@
 
   "vars": {
     "API_URL": "https://tartay2d.com/api/state",
-    "POSTER_BACKGROUND_URL": "https://tartay2d.com"
+    "POSTER_BACKGROUND_URL": "https://raw.githubusercontent.com/yehtetAunf/newzealand-2d-official/main/images/result.jpg.jpg"
   },
 
   "d1_databases": [

@@ -1,0 +1,19 @@
+TarTay 2D Live migration
+
+Changes:
+- Removed the retired New Zealand API URL.
+- Live state source is now https://tartay2d.com/api/state
+- App/WebApp URL is now https://tartay2d.com/
+- Added an adapter for Tartay /api/state response:
+  operational_date, market, rounds, results, resultHold
+- Updated the bot schedule to Tartay's 8 rounds:
+  05:00 PM, 06:00 PM, 07:00 PM, 08:00 PM,
+  09:00 PM, 10:00 PM, 11:00 PM, 12:00 AM
+- Updated poster screenshot target to Tartay.
+- Updated wrangler API_URL to Tartay.
+- Updated user-facing bot labels from New Zealand 2D to TarTay 2D.
+
+Validation:
+- node --check src/index.js: OK
+- node --check src/poster.js: OK
+- No retired newzealand2d.com or nz-six-times endpoint remains in source.
