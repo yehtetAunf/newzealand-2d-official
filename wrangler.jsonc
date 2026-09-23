@@ -14,8 +14,8 @@
   },
 
   "vars": {
-    "API_URL": "https://nz-six-times-2d-2026.yehtetaung7655.workers.dev/api/state",
-    "POSTER_BACKGROUND_URL": "https://raw.githubusercontent.com/yehtetAunf/newzealand-2d-official/main/images/result.jpg.jpg"
+    "API_URL": "https://tartay2d.com/api/state",
+    "POSTER_BACKGROUND_URL": "https://tartay2d.com"
   },
 
   "d1_databases": [
