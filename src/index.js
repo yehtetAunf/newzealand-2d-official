@@ -1,5 +1,5 @@
-const STATE_API_URL = "https://newzealand2d.com/api/state";
-const APP_URL = "https://newzealand2d.com/app";
+const STATE_API_URL = "https://tartay2d.com/api/state";
+const APP_URL = "https://tartay2d.com";
 const CHANNEL_URL = "https://t.me/New_2d";
 const MYANMAR_OFFSET_MINUTES = 6 * 60 + 30;
 const DB_NAME = "newzealand-2d-live-bot-db";
@@ -194,9 +194,50 @@ async function fetchLiveState() {
 
     if (!response.ok) throw new Error(`2D API error: ${response.status}`);
 
-    const data = await response.json();
-    if (!data || data.success !== true) throw new Error("2D Live Data မရရှိပါ");
-    return data;
+    const source = await response.json();
+    if (!source || source.success !== true) throw new Error("Tartay 2D Live Data မရရှိပါ");
+
+    // Tartay 2D /api/state -> this bot's internal live-state shape.
+    const sourceResults = Array.isArray(source.results) ? source.results : [];
+    const sourceRounds = Array.isArray(source.rounds) ? source.rounds : [];
+    const resultsByTime = new Map(
+      sourceResults.map((item) => [String(item.round_time || "").trim().toUpperCase(), item])
+    );
+
+    const rounds = sourceRounds.map((time) => {
+      const roundTime = typeof time === "string" ? time : String(time?.time || "");
+      const item = resultsByTime.get(roundTime.trim().toUpperCase());
+      return {
+        time: roundTime,
+        result: item?.result_2d || null,
+        set: item?.set_value || null,
+        value: item?.value_value || null,
+        status: item?.published_at ? "published" : "pending",
+        updatedAt: item?.updated_at || source.serverNow || null,
+      };
+    });
+
+    const hold = source.resultHold || null;
+    const current = hold?.active
+      ? sourceResults.find((item) => String(item.round_time || "").trim().toUpperCase() === String(hold.round_time || "").trim().toUpperCase())
+      : sourceResults[sourceResults.length - 1];
+
+    const market = source.market || {};
+    return {
+      success: true,
+      date: source.operational_date,
+      appStatus: { label: hold?.active ? "LIVE" : "OPEN" },
+      live: {
+        status: hold?.active ? "LIVE" : "OPEN",
+        result: current?.result_2d || hold?.result_2d || null,
+        set: current?.set_value || market.set || null,
+        value: current?.value_value || market.value || null,
+        updatedAt: current?.updated_at || source.serverNow || null,
+      },
+      rounds,
+      market,
+      source: "Tartay 2D",
+    };
   } catch (error) {
     if (error?.name === "AbortError") throw new Error("2D API response timeout ဖြစ်နေပါတယ်");
     throw error;
