@@ -892,11 +892,17 @@ async function notifyAllDestinationsWithPhoto(env, caption, replyMarkup) {
 }
 
 function resultNotificationText(record, changed = false) {
+  // Telegram-friendly premium-style emoji layout. These are normal Unicode
+  // emoji so every Telegram client can render them; actual custom Premium
+  // emoji require bot-owner Premium/custom-emoji IDs and cannot be inferred
+  // from a screenshot alone.
+  const result = String(record.result || "--").padStart(2, "0");
+  const digits = [...result].map((d) => `${d}️⃣`).join("");
   const lines = [
     changed ? "♻️ TarTay 2D Result ပြင်ဆင်ချက်" : "🔔 TarTay 2D Result",
     "",
-    `📅 ${displayDate(record.resultDate)}`,
-    `${timeIcon(record.roundTime)} ${record.roundTime} — ${record.result}`,
+    `🗓️ ${displayDate(record.resultDate)}`,
+    `⏰ ${record.roundTime} — ✨ ${digits} ✨`,
   ];
   if (record.setValue) lines.push(`📊 SET — ${record.setValue}`);
   if (record.marketValue) lines.push(`💰 VALUE — ${record.marketValue}`);
@@ -971,7 +977,7 @@ function formatLiveMessage(data) {
   const lines = [
     "🇲🇲 TarTay 2D Live",
     "",
-    `📅 Date — ${displayDate(normalizeApiDate(data.date))}`,
+    `🗓️ Date — ${displayDate(normalizeApiDate(data.date))}`,
     `${statusEmoji(status.kind)} Status — ${status.raw}`,
     `📊 SET — ${live.set || "--"}`,
     `💰 VALUE — ${live.value || "--"}`,
