@@ -1049,7 +1049,7 @@ function welcomeCaption() {
 async function sendWelcomePhoto(env, chatId, origin) {
   const subscriber = await getSubscriber(env, chatId);
   const notificationsEnabled = Number(subscriber?.notifications_enabled ?? 1) === 1;
-  const photo = env.WELCOME_PHOTO_FILE_ID || `${origin}/welcome-image`;
+  const photo = env.WELCOME_PHOTO_FILE_ID || `${origin}/welcome-image?v=2`;
 
   try {
     await telegramRequest(env.BOT_TOKEN, "sendPhoto", {
@@ -1879,7 +1879,7 @@ export default {
       return new Response(imageBytesFromBase64(), {
         headers: {
           "Content-Type": WELCOME_IMAGE_MIME,
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "no-store",
         },
       });
     }
